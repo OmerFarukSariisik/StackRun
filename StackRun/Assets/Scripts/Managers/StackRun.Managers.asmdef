@@ -1,0 +1,4 @@
+{
+	"name": "StackRun.Managers",
+	"references":[ "StackRun.Data", "StackRun.Components", "UniTask" ]
+}

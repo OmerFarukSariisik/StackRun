@@ -1,18 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using Data;
+using Zenject;
 
-public class GameInstaller : MonoBehaviour
+public class GameInstaller : MonoInstaller
 {
-    // Start is called before the first frame update
-    void Start()
+    public override void InstallBindings()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        Container.Bind<LevelProgressSaver>().AsSingle().NonLazy();
+        Container.Bind<LevelDataLoader>().AsSingle().NonLazy();
     }
 }
