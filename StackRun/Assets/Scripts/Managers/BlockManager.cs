@@ -15,10 +15,12 @@ namespace Managers
         [SerializeField] private float blockYPos = -0.55f;
         [SerializeField] private float horizontalSpace;
         [SerializeField] private float xDiffToleration = 0.1f;
+        [SerializeField] private float clickTimeout = 3f;
         
         [SerializeField] private List<Material> blockMaterials;
     
         public Action OnLevelComplete;
+        public Action OnLevelFailed;
         
         private BlockComponent _previousBlock;
         private Vector3 _defaultScale;
@@ -67,20 +69,30 @@ namespace Managers
                 newBlock.StartMoving(_isRight);
                 
                 _isClickBlocked = false;
-                await UniTask.WaitUntil(() => _isClicked);
+                try
+                {
+                    await UniTask.WaitUntil(() => _isClicked).Timeout(TimeSpan.FromSeconds(clickTimeout))
+                        .SuppressCancellationThrow();
+                }
+                catch (Exception e)
+                {
+                    //ignore timeout
+                }
+                
                 _isClickBlocked = true;
                 newBlock.StopMoving();
                 var result = CheckBlock(newBlock);
-                await characterManager.RunToPositionAsync(result.targetPos);
+                if (result.isSuccess)
+                    await characterManager.RunToPositionAsync(result.targetPos);
+                else
+                {
+                    OnLevelFailed?.Invoke();
+                    return;
+                }
                 
                 _isClicked = false;
                 _stackCounter++;
                 _isRight = !_isRight;
-                
-                if (!result.isSuccess)
-                {
-                    return;
-                }
             }
             
             await characterManager.RunToPositionAsync(_finishPosition);

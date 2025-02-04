@@ -28,6 +28,7 @@ namespace Managers
         void Start()
         {
             blockManager.OnLevelComplete += OnLevelComplete;
+            blockManager.OnLevelFailed += OnLevelFailed;
             _levelDataLoader.OnLevelLoaded += OnLevelLoaded;
             uiManager.OnTapToStart += OnTapToStart;
             StartNextLevel();
@@ -94,9 +95,21 @@ namespace Managers
             blockManager.ResetValues();
             StartNextLevel();
         }
+        
+        private void OnLevelFailed()
+        {
+            OnLevelFailedAsync().Forget();
+        }
+
+        private async UniTaskVoid OnLevelFailedAsync()
+        {
+            await UniTask.Delay(TimeSpan.FromSeconds(1.5f));
+            uiManager.ShowRetryPopup();
+        }
 
         private void OnDestroy()
         {
+            blockManager.OnLevelFailed -= OnLevelFailed;
             blockManager.OnLevelComplete -= OnLevelComplete;
             _levelDataLoader.OnLevelLoaded -= OnLevelLoaded;
             uiManager.OnTapToStart -= OnTapToStart;
