@@ -10,6 +10,9 @@ namespace Managers
     {
         [SerializeField] private CinemachineVirtualCamera virtualCamera;
         [SerializeField] private Animator animator;
+        [SerializeField] private ParticleSystem starParticle;
+        [SerializeField] private ParticleSystem coinParticle;
+        [SerializeField] private ParticleSystem diamondParticle;
         [SerializeField] private float runDuration = 2f;
         [SerializeField] private float danceDuration = 3.2f;
         
@@ -36,6 +39,29 @@ namespace Managers
             await UniTask.Delay(TimeSpan.FromSeconds(danceDuration));
             animator.SetBool(Dance, false);
             virtualCamera.Priority = 9;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            ParticleSystem particle;
+            switch (other.tag)
+            {
+                case "Coin":
+                    particle = coinParticle;
+                    break;
+                case "Diamond":
+                    particle = diamondParticle;
+                    break;
+                case "Star":
+                    particle = starParticle;
+                    break;
+                default:
+                    return;
+            }
+            
+            particle.transform.position = other.transform.position;
+            particle.Play();
+            Destroy(other.gameObject);
         }
     }
 }
