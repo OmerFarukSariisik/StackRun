@@ -8,6 +8,7 @@ namespace Managers
 {
     public class BlockManager : MonoBehaviour
     {
+        [SerializeField] private CharacterManager characterManager;
         [SerializeField] private InputManager inputManager;
         [SerializeField] private BlockComponent blockComponent;
         [SerializeField] private Transform blockParent;
@@ -54,7 +55,12 @@ namespace Managers
                 
                 await UniTask.WaitUntil(() => _isClicked);
                 newBlock.StopMoving();
-                CheckBlock(newBlock);
+                var result = CheckBlock(newBlock);
+                await characterManager.RunToPositionAsync(result.targetPos);
+                if (!result.isSuccess)
+                {
+                    return;
+                }
                 
                 _isClicked = false;
                 _stackCounter++;
@@ -67,43 +73,53 @@ namespace Managers
             _isClicked = true;
         }
 
-        private void CheckBlock(BlockComponent newBlock)
+        private (Vector3 targetPos, bool isSuccess) CheckBlock(BlockComponent newBlock)
         {
             var previousXPos = _previousBlock.transform.position.x;
             var previousScaleX = _previousBlock.transform.localScale.x;
             var xDiff = newBlock.transform.position.x - previousXPos;
+            
             Debug.Log("xDiff: " + xDiff);
             if (Mathf.Abs(xDiff) < xDiffToleration)
             {
                 Debug.Log("Tolerated by " + xDiff);
                 newBlock.PerfectPlace(previousXPos);
                 _previousBlock = newBlock;
+                return (_previousBlock.transform.position, true);
             }
-            else if (Mathf.Abs(xDiff) >= previousScaleX)
+
+            if (Mathf.Abs(xDiff) >= previousScaleX)
             {
                 newBlock.StartFalling();
+                var targetPos = _previousBlock.transform.position;
+                targetPos.z += _defaultScale.z;
+                return (targetPos, false);
             }
-            else
-            {
-                var fallingBlockPos = new Vector3(
-                    previousXPos + (xDiff / 2f) + (xDiff > 0 ? previousScaleX / 2f : -previousScaleX / 2f), blockYPos,
-                    newBlock.transform.position.z);
-                var fallingBlock = Instantiate(blockComponent, fallingBlockPos, Quaternion.identity, blockParent);
-                fallingBlock.SetMaterial(blockMaterials[_stackCounter % blockMaterials.Count]);
-                fallingBlock.SetXScale(previousScaleX - (previousScaleX - Mathf.Abs(xDiff)));
-                fallingBlock.StartFalling();
-                fallingBlock.name = "FallingBlock" + _stackCounter;
+            
+            return (BreakBlock(newBlock, xDiff, previousXPos, previousScaleX), true);
+        }
 
-                var remainingBlockPos =
-                    new Vector3(previousXPos + (xDiff / 2f), blockYPos, newBlock.transform.position.z);
-                var remainingBlock = Instantiate(blockComponent, remainingBlockPos, Quaternion.identity, blockParent);
-                remainingBlock.SetMaterial(blockMaterials[_stackCounter % blockMaterials.Count]);
-                remainingBlock.SetXScale(previousScaleX - Mathf.Abs(xDiff));
-                remainingBlock.name = "RemainingBlock" + _stackCounter;
+        private Vector3 BreakBlock(BlockComponent newBlock,float xDiff, float previousXPos, float previousScaleX)
+        {
+            var fallingBlockPos = new Vector3(
+                previousXPos + (xDiff / 2f) + (xDiff > 0 ? previousScaleX / 2f : -previousScaleX / 2f), blockYPos,
+                newBlock.transform.position.z);
+            var fallingBlock = Instantiate(blockComponent, fallingBlockPos, Quaternion.identity, blockParent);
+            fallingBlock.SetMaterial(blockMaterials[_stackCounter % blockMaterials.Count]);
+            fallingBlock.SetXScale(previousScaleX - (previousScaleX - Mathf.Abs(xDiff)));
+            fallingBlock.StartFalling();
+            fallingBlock.name = "FallingBlock" + _stackCounter;
+
+            var remainingBlockPos =
+                new Vector3(previousXPos + (xDiff / 2f), blockYPos, newBlock.transform.position.z);
+            var remainingBlock = Instantiate(blockComponent, remainingBlockPos, Quaternion.identity, blockParent);
+            remainingBlock.SetMaterial(blockMaterials[_stackCounter % blockMaterials.Count]);
+            remainingBlock.SetXScale(previousScaleX - Mathf.Abs(xDiff));
+            remainingBlock.name = "RemainingBlock" + _stackCounter;
                 
-                Destroy(newBlock.gameObject);
-                _previousBlock = remainingBlock;
-            }
+            Destroy(newBlock.gameObject);
+            _previousBlock = remainingBlock;
+            return remainingBlock.transform.position;
         }
 
         private void OnDestroy()

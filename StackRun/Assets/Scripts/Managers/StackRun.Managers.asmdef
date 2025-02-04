@@ -1,4 +1,19 @@
 {
-	"name": "StackRun.Managers",
-	"references":[ "StackRun.Data", "StackRun.Components", "UniTask" ]
+    "name": "StackRun.Managers",
+    "rootNamespace": "",
+    "references": [
+        "StackRun.Data",
+        "StackRun.Components",
+        "UniTask",
+        "UniTask.DOTween"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
