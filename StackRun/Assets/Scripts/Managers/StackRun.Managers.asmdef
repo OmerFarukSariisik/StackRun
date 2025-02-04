@@ -5,7 +5,8 @@
         "StackRun.Data",
         "StackRun.Components",
         "UniTask",
-        "UniTask.DOTween"
+        "UniTask.DOTween",
+        "Cinemachine"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

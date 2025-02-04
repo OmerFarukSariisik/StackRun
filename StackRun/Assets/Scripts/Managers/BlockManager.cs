@@ -18,12 +18,17 @@ namespace Managers
         
         [SerializeField] private List<Material> blockMaterials;
     
+        public Action OnLevelComplete;
+        
         private BlockComponent _previousBlock;
         private Vector3 _defaultScale;
+        private Vector3 _finishPosition;
+        private float _startZPos;
         private int _totalStackCount;
         private int _stackCounter;
         private bool _isRight;
         private bool _isClicked;
+        private bool _isClickBlocked = true;
 
         private void Start()
         {
@@ -31,9 +36,12 @@ namespace Managers
             _defaultScale = blockComponent.transform.localScale;
         }
 
-        public void CreateFirstBlock()
+        public void CreateFirstBlock(bool isInitialLevel)
         {
-            _previousBlock = Instantiate(blockComponent, new Vector3(0f, blockYPos, 0f), Quaternion.identity, blockParent);
+            _previousBlock = Instantiate(blockComponent, new Vector3(0f, blockYPos, _startZPos), Quaternion.identity,
+                blockParent);
+            if (!isInitialLevel)
+                characterManager.RunToPositionAsync(_previousBlock.transform.position).Forget();
         }
 
         public void SetTotalStackCount(int totalStackCount)
@@ -41,11 +49,16 @@ namespace Managers
             _totalStackCount = totalStackCount;
         }
 
-        public async UniTask StartBlockSequenceAsync()
+        public void SetStartZPos(float zPos)
+        {
+            _startZPos = zPos;
+        }
+
+        public async UniTaskVoid StartBlockSequenceAsync()
         {
             while (_stackCounter < _totalStackCount)
             {
-                var positionZ = _defaultScale.z * (_stackCounter + 1);
+                var positionZ = _startZPos + _defaultScale.z * (_stackCounter + 1);
                 var newBlock = Instantiate(blockComponent,
                     new Vector3(_isRight ? horizontalSpace : -horizontalSpace, blockYPos, positionZ), Quaternion.identity,
                     blockParent);
@@ -53,23 +66,32 @@ namespace Managers
                 newBlock.transform.localScale = _previousBlock.transform.localScale;
                 newBlock.StartMoving(_isRight);
                 
+                _isClickBlocked = false;
                 await UniTask.WaitUntil(() => _isClicked);
+                _isClickBlocked = true;
                 newBlock.StopMoving();
                 var result = CheckBlock(newBlock);
                 await characterManager.RunToPositionAsync(result.targetPos);
-                if (!result.isSuccess)
-                {
-                    return;
-                }
                 
                 _isClicked = false;
                 _stackCounter++;
                 _isRight = !_isRight;
+                
+                if (!result.isSuccess)
+                {
+                    return;
+                }
             }
+            
+            await characterManager.RunToPositionAsync(_finishPosition);
+            await characterManager.DanceAsync();
+            OnLevelComplete?.Invoke();
         }
         
         private void OnClick()
         {
+            if (_isClickBlocked)
+                return;
             _isClicked = true;
         }
 
@@ -120,6 +142,18 @@ namespace Managers
             Destroy(newBlock.gameObject);
             _previousBlock = remainingBlock;
             return remainingBlock.transform.position;
+        }
+
+        public void SetFinishPosition(Vector3 targetPos)
+        {
+            _finishPosition = targetPos;
+        }
+
+        public void ResetValues()
+        {
+            _isRight = false;
+            _isClicked = false;
+            _stackCounter = 0;
         }
 
         private void OnDestroy()
