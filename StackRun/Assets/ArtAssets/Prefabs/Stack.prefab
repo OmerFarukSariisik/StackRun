@@ -111,5 +111,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   meshRenderer: {fileID: 8407314420177296321}
-  moveSpeed: 2.5
-  fallSpeed: 2.5
+  moveSpeed: 3.6
+  fallSpeed: 3.6

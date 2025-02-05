@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Components;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using Zenject;
 
 namespace Managers
 {
@@ -18,6 +19,8 @@ namespace Managers
         [SerializeField] private float clickTimeout = 3f;
         
         [SerializeField] private List<Material> blockMaterials;
+        
+        [Inject] private SoundManager _soundManager;
     
         public Action OnLevelComplete;
         public Action OnLevelFailed;
@@ -28,6 +31,7 @@ namespace Managers
         private float _startZPos;
         private int _totalStackCount;
         private int _stackCounter;
+        private int _perfectStackCounter = 0;
         private bool _isRight;
         private bool _isClicked;
         private bool _isClickBlocked = true;
@@ -118,6 +122,8 @@ namespace Managers
             {
                 Debug.Log("Tolerated by " + xDiff);
                 newBlock.PerfectPlace(previousXPos);
+                _soundManager.PlayPerfectNote(_perfectStackCounter);
+                _perfectStackCounter++;
                 _previousBlock = newBlock;
                 return (_previousBlock.transform.position, true);
             }
@@ -129,7 +135,9 @@ namespace Managers
                 targetPos.z += _defaultScale.z;
                 return (targetPos, false);
             }
-            
+
+            _perfectStackCounter = 0;
+            _soundManager.PlayBreakSound();
             return (BreakBlock(newBlock, xDiff, previousXPos, previousScaleX), true);
         }
 
@@ -166,6 +174,7 @@ namespace Managers
             _isRight = false;
             _isClicked = false;
             _stackCounter = 0;
+            _perfectStackCounter = 0;
         }
 
         private void OnDestroy()

@@ -1,4 +1,5 @@
 using Data;
+using Managers;
 using Zenject;
 
 public class GameInstaller : MonoInstaller
@@ -7,5 +8,6 @@ public class GameInstaller : MonoInstaller
     {
         Container.Bind<LevelProgressSaver>().AsSingle().NonLazy();
         Container.Bind<LevelDataLoader>().AsSingle().NonLazy();
+        Container.Bind<SoundManager>().FromComponentInHierarchy().AsSingle();
     }
 }
